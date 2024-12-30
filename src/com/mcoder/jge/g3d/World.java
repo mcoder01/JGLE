@@ -1,10 +1,9 @@
 package com.mcoder.jge.g3d;
 
-import com.mcoder.jge.g3d.scene.light.AmbientLight;
 import com.mcoder.jge.g3d.scene.light.Light;
 import com.mcoder.jge.g3d.model.Model;
 import com.mcoder.jge.g3d.scene.Solid;
-import com.mcoder.jge.g3d.render.Pipeline;
+import com.mcoder.jge.g3d.render.SolidDrawer;
 import com.mcoder.jge.g3d.render.shader.Phong;
 import com.mcoder.jge.g3d.scene.Camera;
 import com.mcoder.jge.g3d.scene.light.Spotlight;
@@ -17,7 +16,7 @@ import java.awt.*;
 import java.util.LinkedList;
 
 public class World extends View {
-    private Pipeline pipeline;
+    private SolidDrawer drawer;
     private Camera camera;
     private LinkedList<Light> lights;
 
@@ -70,10 +69,10 @@ public class World extends View {
             else drawable.show(g2d);
     }
 
-    private Pipeline getPipeline() {
-        if (pipeline == null)
-            pipeline = new Pipeline(this);
-        return pipeline;
+    private SolidDrawer getPipeline() {
+        if (drawer == null)
+            drawer = new SolidDrawer(this);
+        return drawer;
     }
 
     public Camera getCamera() {

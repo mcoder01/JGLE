@@ -9,10 +9,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fb1561c6-e63c-4180-aca7-4d13b9b57cb8" name="Changes" comment="Refactored code and improved pipeline through threads">
+    <list default="true" id="fb1561c6-e63c-4180-aca7-4d13b9b57cb8" name="Changes" comment="Fixed parallel normal calculation and parallel triangle rastering bugs">
+      <change afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/SolidDrawer.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/pipeline/Pipeline.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/pipeline/Worker.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/geom/Triangle.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/geom/Triangle.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/Pipeline.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/Pipeline.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/World.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/World.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/Pipeline.java" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -209,7 +212,15 @@
       <option name="project" value="LOCAL" />
       <updated>1723296789794</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Fixed parallel normal calculation and parallel triangle rastering bugs">
+      <option name="closed" value="true" />
+      <created>1723297412026</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1723297412026</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -238,7 +249,8 @@
     <MESSAGE value="Fixed axis and refactored code" />
     <MESSAGE value="Fixed shading problem and refactored code" />
     <MESSAGE value="Refactored code and improved pipeline through threads" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactored code and improved pipeline through threads" />
+    <MESSAGE value="Fixed parallel normal calculation and parallel triangle rastering bugs" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed parallel normal calculation and parallel triangle rastering bugs" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

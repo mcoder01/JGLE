@@ -1,0 +1,306 @@
+Index: src/com/mcoder/jge/screen/GameLoop.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mcoder.jge.screen;\n\npublic class GameLoop extends Thread {\n\tprivate final Screen screen;\n\tprivate int frameRate, frameCount;\n\tprivate double deltaTime;\n\tprivate boolean running;\n\n\tpublic GameLoop(Screen screen) {\n\t\tthis.screen = screen;\n\t\tscreen.setLoop(this);\n\t\tshowFPS();\n\t\tframeRate = 0;\n\t}\n\n\t@Override\n\tpublic void run() {\n\t\tlong lastTime = System.nanoTime(), totalTime = 0;\n\t\tdouble unprocessedFramesTime = 0;\n\n\t\twhile(running) {\n\t\t\tdouble timePerFrame = (frameRate == 0) ? 0 : 1.0E9 / frameRate;\n\t\t\tlong currTime = System.nanoTime();\n\t\t\tlong passedTime = currTime - lastTime;\n\t\t\tdeltaTime = passedTime/1.0E9;\n\n\t\t\tunprocessedFramesTime += passedTime;\n\t\t\ttotalTime += passedTime;\n\t\t\tlastTime = currTime;\n\n\t\t\tif (unprocessedFramesTime >= timePerFrame) {\n\t\t\t\tscreen.update();\n\t\t\t\tscreen.draw();\n\t\t\t\tframeCount++;\n\n\t\t\t\tif (timePerFrame > 0)\n\t\t\t\t\tunprocessedFramesTime -= timePerFrame;\n\t\t\t\telse unprocessedFramesTime = 0;\n\t\t\t}\n\n\t\t\tif (totalTime >= 1.0E9) {\n\t\t\t\tshowFPS();\n\t\t\t\ttotalTime = frameCount = 0;\n\t\t\t}\n\t\t}\n\t}\n\n\t@Override\n\tpublic void start() {\n\t\trunning = true;\n\t\tsuper.start();\n\t}\n\n\t@Override\n\tpublic void interrupt() {\n\t\trunning = false;\n\t\tsuper.interrupt();\n\t}\n\n\tprivate void showFPS() {\n\t\tscreen.getWindow().setTitle(STR.\"\\{screen.getTitle()} | FPS: \\{frameCount}\");\n\t}\n\n\tpublic void setFrameRate(int frameRate) {\n\t\tthis.frameRate = frameRate;\n\t}\n\n\tpublic double getDeltaTime() {\n\t\treturn deltaTime;\n\t}\n\n\tpublic int getFrameRate() {\n\t\treturn frameRate;\n\t}\n\n\tpublic int getFrameCount() {\n\t\treturn frameCount;\n\t}\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/com/mcoder/jge/screen/GameLoop.java b/src/com/mcoder/jge/screen/GameLoop.java
+--- a/src/com/mcoder/jge/screen/GameLoop.java	
++++ b/src/com/mcoder/jge/screen/GameLoop.java	
+@@ -4,7 +4,6 @@
+ 	private final Screen screen;
+ 	private int frameRate, frameCount;
+ 	private double deltaTime;
+-	private boolean running;
+ 
+ 	public GameLoop(Screen screen) {
+ 		this.screen = screen;
+@@ -18,7 +17,7 @@
+ 		long lastTime = System.nanoTime(), totalTime = 0;
+ 		double unprocessedFramesTime = 0;
+ 
+-		while(running) {
++		while(isAlive()) {
+ 			double timePerFrame = (frameRate == 0) ? 0 : 1.0E9 / frameRate;
+ 			long currTime = System.nanoTime();
+ 			long passedTime = currTime - lastTime;
+@@ -45,20 +44,8 @@
+ 		}
+ 	}
+ 
+-	@Override
+-	public void start() {
+-		running = true;
+-		super.start();
+-	}
+-
+-	@Override
+-	public void interrupt() {
+-		running = false;
+-		super.interrupt();
+-	}
+-
+ 	private void showFPS() {
+-		screen.getWindow().setTitle(STR."\{screen.getTitle()} | FPS: \{frameCount}");
++		screen.getWindow().setTitle(screen.getTitle() + "| FPS: " + frameCount);
+ 	}
+ 
+ 	public void setFrameRate(int frameRate) {
+Index: src/com/mcoder/jge/util/Texture.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mcoder.jge.util;\n\nimport javax.imageio.ImageIO;\nimport java.awt.image.BufferedImage;\nimport java.io.IOException;\nimport java.io.InputStream;\n\npublic class Texture {\n    private BufferedImage[] images;\n    private int[] pixels;\n    private int index;\n\n    public Texture(BufferedImage... images) {\n        this.images = images;\n    }\n\n    /**\n     * Creates a texture basing on one or multiple images, for animated sprites\n     * @param imagePaths Array of paths to the images which constitute the texture\n     */\n    public Texture(String... imagePaths) {\n        images = new BufferedImage[imagePaths.length];\n        for (int i = 0; i < images.length; i++)\n            images[i] = loadImage(imagePaths[i]);\n    }\n\n    /**\n     * Creates a texture basing on a unique image which contains all the components of the texture\n     * @param globalImagePath Path to the image containing all the textures\n     * @param subW Width of each single image\n     * @param subH Height of each single image\n     */\n    public Texture(String globalImagePath, int subW, int subH) {\n        BufferedImage global = loadImage(globalImagePath);\n        if (global != null) {\n            int rows = global.getHeight() / subH;\n            int cols = global.getWidth() / subW;\n            images = new BufferedImage[rows * cols];\n            for (int i = 0; i < rows; i++)\n                for (int j = 0; j < cols; j++)\n                    images[i * cols + j] = global.getSubimage(j * subW, i * subH, subW, subH);\n        }\n    }\n\n    private BufferedImage loadImage(String fileName) {\n        try {\n            InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);\n            if (is != null) return ImageIO.read(is);\n        } catch (IOException e) {\n            System.err.println(STR.\"Unable to load \\{fileName}\");\n        }\n\n        return null;\n    }\n\n    public BufferedImage nextImage() {\n        if (images == null)\n            return null;\n\n        index++;\n        if (index == images.length)\n            index = 0;\n        pixels = null;\n        return images[index];\n    }\n\n    public int[] getPixels() {\n        if (pixels == null) {\n            BufferedImage image = images[index];\n            return pixels = image.getRGB(0, 0, image.getWidth(),\n                    image.getHeight(), null, 0, image.getWidth());\n        }\n\n        return pixels;\n    }\n\n    public int getRGB(int x, int y) {\n        return getPixels()[x+y*getWidth()];\n    }\n\n    public BufferedImage getImage() {\n        return images[index];\n    }\n\n    public int getWidth() {\n        return getImage().getWidth();\n    }\n\n    public int getHeight() {\n        return getImage().getHeight();\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/com/mcoder/jge/util/Texture.java b/src/com/mcoder/jge/util/Texture.java
+--- a/src/com/mcoder/jge/util/Texture.java	
++++ b/src/com/mcoder/jge/util/Texture.java	
+@@ -47,7 +47,7 @@
+             InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);
+             if (is != null) return ImageIO.read(is);
+         } catch (IOException e) {
+-            System.err.println(STR."Unable to load \{fileName}");
++            System.err.println("Unable to load " + fileName);
+         }
+ 
+         return null;
+Index: src/com/mcoder/jge/g3d/core/Model.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mcoder.jge.g3d.core;\n\nimport com.mcoder.jge.math.Vector2D;\nimport com.mcoder.jge.math.Vector3D;\n\nimport java.io.BufferedReader;\nimport java.io.FileReader;\nimport java.io.IOException;\nimport java.util.ArrayList;\nimport java.util.Arrays;\n\npublic class Model {\n    private final ArrayList<Vector3D> points;\n    private final ArrayList<Vector2D> texCoords;\n    private final ArrayList<OBJIndex[]> faces;\n\n    private Model() {\n        points = new ArrayList<>();\n        texCoords = new ArrayList<>();\n        faces = new ArrayList<>();\n    }\n\n    public int numberOfFaces() {\n        return faces.size();\n    }\n\n    public ArrayList<Vector3D> getPoints() { return points; }\n\n    public ArrayList<Vector2D> getTexCoords() {\n        return texCoords;\n    }\n\n    public ArrayList<OBJIndex[]> getTriangles() {\n        ArrayList<OBJIndex[]> triangles = new ArrayList<>();\n        for (OBJIndex[] face : faces)\n            for (int i = 0; i < face.length-2; i++)\n                triangles.add(new OBJIndex[]{face[0], face[1 + i], face[2 + i]});\n        return triangles;\n    }\n\n    public ArrayList<OBJIndex[]> getFaces() {\n        return faces;\n    }\n\n    public static Model loadFromFile(String modelFile) {\n        Model model = new Model();\n        int[] defaultTexIndices = {3, 0, 1, 2};\n        try (BufferedReader reader = new BufferedReader(new FileReader(modelFile))) {\n            while (reader.ready()) {\n                String[] info = reader.readLine().split(\" \");\n                switch (info[0]) {\n                    case \"v\" -> model.points.add(parseVector(info));\n                    case \"vt\" -> model.texCoords.add(parseVector(info));\n                    case \"f\" -> {\n                        OBJIndex[] face = new OBJIndex[info.length-1];\n                        for (int i = 0; i < face.length; i++) {\n                            String[] indexes = info[i + 1].split(\"/\");\n                            face[i] = new OBJIndex();\n                            face[i].setPointIndex(Integer.parseInt(indexes[0])-1);\n                            if (indexes.length > 1)\n                                face[i].setTexCoordsIndex(Integer.parseInt(indexes[1]) - 1);\n                            else face[i].setTexCoordsIndex(defaultTexIndices[i]);\n                            model.faces.add(face);\n                        }\n                    }\n                }\n            }\n        } catch (IOException e) {\n            e.printStackTrace();\n        }\n\n        if (model.texCoords.size() == 0)\n            model.texCoords.addAll(Arrays.asList(\n                    new Vector2D(0, 0),\n                    new Vector2D(1, 0),\n                    new Vector2D(1, 1),\n                    new Vector2D(0, 1)\n            ));\n\n        return model;\n    }\n\n    private static Vector3D parseVector(String[] info) {\n        double[] values = parseDoubles(info);\n        return new Vector3D(values[0], values[1], values[2]);\n    }\n\n    private static double[] parseDoubles(String[] info) {\n        double[] values = new double[3];\n        for (int i = 0; i < info.length-1; i++)\n            values[i] = Double.parseDouble(info[i+1]);\n        return values;\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/com/mcoder/jge/g3d/core/Model.java b/src/com/mcoder/jge/g3d/core/Model.java
+--- a/src/com/mcoder/jge/g3d/core/Model.java	
++++ b/src/com/mcoder/jge/g3d/core/Model.java	
+@@ -60,8 +60,8 @@
+                             if (indexes.length > 1)
+                                 face[i].setTexCoordsIndex(Integer.parseInt(indexes[1]) - 1);
+                             else face[i].setTexCoordsIndex(defaultTexIndices[i]);
+-                            model.faces.add(face);
+-                        }
++                        }
++                        model.faces.add(face);
+                     }
+                 }
+             }
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"ArtifactsWorkspaceSettings\">\n    <artifacts-to-build>\n      <artifact name=\"JGE:jar\" />\n    </artifacts-to-build>\n  </component>\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"fb1561c6-e63c-4180-aca7-4d13b9b57cb8\" name=\"Changes\" comment=\"Removed useless files\">\n      <change afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/test/G3DTest.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/.idea/misc.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/misc.xml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/g2d/ComposedSprite.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/g2d/ComposedSprite.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/g2d/Sprite.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/g2d/Sprite.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/g3d/core/Light.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/g3d/core/Light.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/g3d/core/Object3D.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/g3d/core/Object3D.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/TriangleRasterizer.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/TriangleRasterizer.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/g3d/scene/Camera.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/g3d/scene/Camera.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/g3d/scene/World.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/g3d/scene/World.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/screen/Drawable.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/screen/Drawable.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/screen/GameLoop.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/screen/GameLoop.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/screen/Screen.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/screen/Screen.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/screen/View.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/screen/View.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/test/Test.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/test/G2DTest.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/util/Texture.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/util/Texture.java\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/src/com/mcoder/jge/util/ThreadPool.java\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/src/com/mcoder/jge/util/ThreadPool.java\" afterDir=\"false\" />\n    </list>\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"FileTemplateManagerImpl\">\n    <option name=\"RECENT_TEMPLATES\">\n      <list>\n        <option value=\"Interface\" />\n        <option value=\"Class\" />\n      </list>\n    </option>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n    <option name=\"RESET_MODE\" value=\"HARD\" />\n  </component>\n  <component name=\"MarkdownSettingsMigration\">\n    <option name=\"stateVersion\" value=\"1\" />\n  </component>\n  <component name=\"ProjectColorInfo\">{\n  &quot;associatedIndex&quot;: 5\n}</component>\n  <component name=\"ProjectId\" id=\"2Lp847voseFNEb9zmy7PQcIu37K\" />\n  <component name=\"ProjectLevelVcsManager\">\n    <ConfirmationsSetting value=\"2\" id=\"Add\" />\n  </component>\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\"><![CDATA[{\n  \"keyToString\": {\n    \"ASKED_ADD_EXTERNAL_FILES\": \"true\",\n    \"Application.Test 3D.executor\": \"Run\",\n    \"Application.Test.executor\": \"Run\",\n    \"RunOnceActivity.OpenProjectViewOnStart\": \"true\",\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\n    \"SHARE_PROJECT_CONFIGURATION_FILES\": \"true\",\n    \"git-widget-placeholder\": \"master\",\n    \"kotlin-language-version-configured\": \"true\",\n    \"last_opened_file_path\": \"/run/media/data/manuel/IdeaProjects/JGE\",\n    \"project.structure.last.edited\": \"SDKs\",\n    \"project.structure.proportion\": \"0.15\",\n    \"project.structure.side.proportion\": \"0.2\",\n    \"settings.editor.selected.configurable\": \"preferences.pluginManager\"\n  }\n}]]></component>\n  <component name=\"RunManager\" selected=\"Application.Test 3D\">\n    <configuration name=\"Test 2D\" type=\"Application\" factoryName=\"Application\">\n      <option name=\"ALTERNATIVE_JRE_PATH\" value=\"22\" />\n      <option name=\"ALTERNATIVE_JRE_PATH_ENABLED\" value=\"true\" />\n      <option name=\"MAIN_CLASS_NAME\" value=\"com.mcoder.jge.test.G2DTest\" />\n      <module name=\"JGE\" />\n      <option name=\"PROGRAM_PARAMETERS\" value=\"-Dsun.java2d.opengl=true\" />\n      <method v=\"2\">\n        <option name=\"Make\" enabled=\"true\" />\n      </method>\n    </configuration>\n    <configuration name=\"Test 3D\" type=\"Application\" factoryName=\"Application\">\n      <option name=\"MAIN_CLASS_NAME\" value=\"com.mcoder.jge.test.G3DTest\" />\n      <module name=\"JGE\" />\n      <method v=\"2\">\n        <option name=\"Make\" enabled=\"true\" />\n      </method>\n    </configuration>\n    <list>\n      <item itemvalue=\"Application.Test 2D\" />\n      <item itemvalue=\"Application.Test 3D\" />\n    </list>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"fb1561c6-e63c-4180-aca7-4d13b9b57cb8\" name=\"Changes\" comment=\"\" />\n      <created>1676556469973</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1676556469973</updated>\n    </task>\n    <task id=\"LOCAL-00001\" summary=\"Graphics2D and pixel manipulation is now done on a single BufferedImage\">\n      <created>1676903387610</created>\n      <option name=\"number\" value=\"00001\" />\n      <option name=\"presentableId\" value=\"LOCAL-00001\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1676903387610</updated>\n    </task>\n    <task id=\"LOCAL-00002\" summary=\"Add animation, texture and sprites management\">\n      <created>1676904567635</created>\n      <option name=\"number\" value=\"00002\" />\n      <option name=\"presentableId\" value=\"LOCAL-00002\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1676904567635</updated>\n    </task>\n    <task id=\"LOCAL-00003\" summary=\"Lag fixed\">\n      <created>1677839593427</created>\n      <option name=\"number\" value=\"00003\" />\n      <option name=\"presentableId\" value=\"LOCAL-00003\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1677839593427</updated>\n    </task>\n    <task id=\"LOCAL-00004\" summary=\"Refactored code\">\n      <created>1677877873728</created>\n      <option name=\"number\" value=\"00004\" />\n      <option name=\"presentableId\" value=\"LOCAL-00004\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1677877873728</updated>\n    </task>\n    <task id=\"LOCAL-00005\" summary=\"Improved performances\">\n      <created>1678055788771</created>\n      <option name=\"number\" value=\"00005\" />\n      <option name=\"presentableId\" value=\"LOCAL-00005\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1678055788771</updated>\n    </task>\n    <task id=\"LOCAL-00006\" summary=\"Fixed zbuffer bug with different tick speed and frame rate\">\n      <created>1678056020539</created>\n      <option name=\"number\" value=\"00006\" />\n      <option name=\"presentableId\" value=\"LOCAL-00006\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1678056020539</updated>\n    </task>\n    <task id=\"LOCAL-00007\" summary=\"Improved lighting and performances\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1696257243530</created>\n      <option name=\"number\" value=\"00007\" />\n      <option name=\"presentableId\" value=\"LOCAL-00007\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1696257243530</updated>\n    </task>\n    <task id=\"LOCAL-00008\" summary=\"Improved performances\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1702227896685</created>\n      <option name=\"number\" value=\"00008\" />\n      <option name=\"presentableId\" value=\"LOCAL-00008\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1702227896685</updated>\n    </task>\n    <task id=\"LOCAL-00009\" summary=\"Removed useless files\">\n      <option name=\"closed\" value=\"true\" />\n      <created>1702228079965</created>\n      <option name=\"number\" value=\"00009\" />\n      <option name=\"presentableId\" value=\"LOCAL-00009\" />\n      <option name=\"project\" value=\"LOCAL\" />\n      <updated>1702228079965</updated>\n    </task>\n    <option name=\"localTasksCounter\" value=\"10\" />\n    <servers />\n  </component>\n  <component name=\"Vcs.Log.Tabs.Properties\">\n    <option name=\"TAB_STATES\">\n      <map>\n        <entry key=\"MAIN\">\n          <value>\n            <State />\n          </value>\n        </entry>\n      </map>\n    </option>\n  </component>\n  <component name=\"VcsManagerConfiguration\">\n    <option name=\"ADD_EXTERNAL_FILES_SILENTLY\" value=\"true\" />\n    <MESSAGE value=\"Graphics2D and pixel manipulation is now done on a single BufferedImage\" />\n    <MESSAGE value=\"Add animation, texture and sprites management\" />\n    <MESSAGE value=\"Lag fixed\" />\n    <MESSAGE value=\"Refactored code\" />\n    <MESSAGE value=\"Fixed zbuffer bug with different tick speed and frame rate\" />\n    <MESSAGE value=\"Improved lighting and performances\" />\n    <MESSAGE value=\"Improved graphic and refactored code\" />\n    <MESSAGE value=\"Improved performances\" />\n    <MESSAGE value=\"Removed useless files\" />\n    <option name=\"LAST_COMMIT_MESSAGE\" value=\"Removed useless files\" />\n  </component>\n  <component name=\"XSLT-Support.FileAssociations.UIState\">\n    <expand />\n    <select />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	
++++ b/.idea/workspace.xml	
+@@ -10,23 +10,15 @@
+   </component>
+   <component name="ChangeListManager">
+     <list default="true" id="fb1561c6-e63c-4180-aca7-4d13b9b57cb8" name="Changes" comment="Removed useless files">
+-      <change afterPath="$PROJECT_DIR$/src/com/mcoder/jge/test/G3DTest.java" afterDir="false" />
++      <change afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/Renderer.java" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g2d/ComposedSprite.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g2d/ComposedSprite.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g2d/Sprite.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g2d/Sprite.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/core/Light.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/core/Light.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/core/Object3D.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/core/Object3D.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/TriangleRasterizer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/render/TriangleRasterizer.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/scene/Camera.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/scene/Camera.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/core/Model.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/core/Model.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/geom/Triangle.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/geom/Triangle.java" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/scene/World.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/g3d/scene/World.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/screen/Drawable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/screen/Drawable.java" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/math/Vector.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/math/Vector.java" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/screen/GameLoop.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/screen/GameLoop.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/screen/Screen.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/screen/Screen.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/screen/View.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/screen/View.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/test/Test.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/test/G2DTest.java" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/util/Texture.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/util/Texture.java" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/src/com/mcoder/jge/util/ThreadPool.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/mcoder/jge/util/ThreadPool.java" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -45,6 +37,18 @@
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+     <option name="RESET_MODE" value="HARD" />
+   </component>
++  <component name="GitHubPullRequestSearchHistory">{
++  &quot;lastFilter&quot;: {
++    &quot;state&quot;: &quot;OPEN&quot;,
++    &quot;assignee&quot;: &quot;mcoder01&quot;
++  }
++}</component>
++  <component name="GithubPullRequestsUISettings">{
++  &quot;selectedUrlAndAccountId&quot;: {
++    &quot;url&quot;: &quot;https://github.com/mcoder01/JGLM.git&quot;,
++    &quot;accountId&quot;: &quot;2a82c9af-2879-4b65-b536-ae441d50f334&quot;
++  }
++}</component>
+   <component name="MarkdownSettingsMigration">
+     <option name="stateVersion" value="1" />
+   </component>
+@@ -59,23 +63,23 @@
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent"><![CDATA[{
+-  "keyToString": {
+-    "ASKED_ADD_EXTERNAL_FILES": "true",
+-    "Application.Test 3D.executor": "Run",
+-    "Application.Test.executor": "Run",
+-    "RunOnceActivity.OpenProjectViewOnStart": "true",
+-    "RunOnceActivity.ShowReadmeOnStart": "true",
+-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+-    "git-widget-placeholder": "master",
+-    "kotlin-language-version-configured": "true",
+-    "last_opened_file_path": "/run/media/data/manuel/IdeaProjects/JGE",
+-    "project.structure.last.edited": "SDKs",
+-    "project.structure.proportion": "0.15",
+-    "project.structure.side.proportion": "0.2",
+-    "settings.editor.selected.configurable": "preferences.pluginManager"
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
++    &quot;Application.Test 3D.executor&quot;: &quot;Run&quot;,
++    &quot;Application.Test.executor&quot;: &quot;Run&quot;,
++    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
++    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
++    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
++    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
++    &quot;last_opened_file_path&quot;: &quot;/run/media/data/manuel/IdeaProjects/JGE&quot;,
++    &quot;project.structure.last.edited&quot;: &quot;SDKs&quot;,
++    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
++    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
++    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
+   }
+-}]]></component>
++}</component>
+   <component name="RunManager" selected="Application.Test 3D">
+     <configuration name="Test 2D" type="Application" factoryName="Application">
+       <option name="ALTERNATIVE_JRE_PATH" value="22" />
+@@ -182,7 +186,19 @@
+       <map>
+         <entry key="MAIN">
+           <value>
+-            <State />
++            <State>
++              <option name="FILTERS">
++                <map>
++                  <entry key="branch">
++                    <value>
++                      <list>
++                        <option value="master" />
++                      </list>
++                    </value>
++                  </entry>
++                </map>
++              </option>
++            </State>
+           </value>
+         </entry>
+       </map>
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_X\" default=\"true\" project-jdk-name=\"22\" project-jdk-type=\"JavaSDK\">\n    <output url=\"file://$PROJECT_DIR$/out\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	
++++ b/.idea/misc.xml	
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+-  <component name="ProjectRootManager" version="2" languageLevel="JDK_X" default="true" project-jdk-name="22" project-jdk-type="JavaSDK">
++  <component name="ProjectRootManager" version="2" languageLevel="JDK_22" default="true" project-jdk-name="22" project-jdk-type="JavaSDK">
+     <output url="file://$PROJECT_DIR$/out" />
+   </component>
+ </project>
+\ No newline at end of file
+Index: src/com/mcoder/jge/g3d/geom/Triangle.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mcoder.jge.g3d.geom;\n\nimport com.mcoder.jge.g3d.core.Vertex;\nimport com.mcoder.jge.g3d.scene.Camera;\nimport com.mcoder.jge.math.Vector2D;\nimport com.mcoder.jge.math.Vector3D;\n\nimport java.util.ArrayList;\n\npublic record Triangle(Vertex... vertices) {\n    public ArrayList<Triangle> clip(Plane plane) {\n        ArrayList<Triangle> triangles = new ArrayList<>(2);\n\n        ArrayList<Vertex> inside = new ArrayList<>(3);\n        ArrayList<Vertex> outside = new ArrayList<>(3);\n\n        boolean clipScreenPos = true;\n        for (Vertex vertex : vertices) {\n            if (vertex.getScreenPosition() == null)\n                clipScreenPos = false;\n\n            double dist = plane.distanceToPoint(vertex.getPosition());\n            if (dist >= 0)\n                inside.add(vertex);\n            else outside.add(vertex);\n        }\n\n        if (inside.size() == 3)\n            triangles.add(this);\n        else if (inside.size() == 1 && outside.size() == 2) {\n            double t1 = planeLineIntersection(plane, inside.get(0).getPosition(), outside.get(0).getPosition());\n            Vector3D point1 = Vector3D.lerp(inside.get(0).getPosition(), outside.get(0).getPosition(), t1);\n            Vector2D tp1 = Vector2D.lerp(inside.get(0).getTexCoords(), outside.get(0).getTexCoords(), t1);\n\n            double t2 = planeLineIntersection(plane, inside.get(0).getPosition(), outside.get(1).getPosition());\n            Vector3D point2 = Vector3D.lerp(inside.get(0).getPosition(), outside.get(1).getPosition(), t2);\n            Vector2D tp2 = Vector2D.lerp(inside.get(0).getTexCoords(), outside.get(1).getTexCoords(), t2);\n\n            Vector2D sp1 = null, sp2 = null;\n            if (clipScreenPos) {\n                sp1 = Vector2D.lerp(inside.get(0).getScreenPosition(), outside.get(0).getScreenPosition(), t1);\n                sp2 = Vector2D.lerp(inside.get(0).getScreenPosition(), outside.get(1).getScreenPosition(), t2);\n            }\n\n            triangles.add(new Triangle(inside.get(0), new Vertex(point1, tp1, outside.get(0).getNormal(), sp1),\n                    new Vertex(point2, tp2, outside.get(1).getNormal(), sp2)));\n        } else if (inside.size() == 2 && outside.size() == 1) {\n            double t1 = planeLineIntersection(plane, inside.get(0).getPosition(), outside.get(0).getPosition());\n            Vector3D point1 = Vector3D.lerp(inside.get(0).getPosition(), outside.get(0).getPosition(), t1);\n            Vector2D tp1 = Vector2D.lerp(inside.get(0).getTexCoords(), outside.get(0).getTexCoords(), t1);\n\n            double t2 = planeLineIntersection(plane, inside.get(1).getPosition(), outside.get(0).getPosition());\n            Vector3D point2 = Vector3D.lerp(inside.get(1).getPosition(), outside.get(0).getPosition(), t2);\n            Vector2D tp2 = Vector2D.lerp(inside.get(1).getTexCoords(), outside.get(0).getTexCoords(), t2);\n\n            Vector2D sp1 = null, sp2 = null;\n            if (clipScreenPos) {\n                sp1 = Vector2D.lerp(inside.get(0).getScreenPosition(), outside.get(0).getScreenPosition(), t1);\n                sp2 = Vector2D.lerp(inside.get(1).getScreenPosition(), outside.get(0).getScreenPosition(), t2);\n            }\n\n            Vector2D sp = outside.get(0).getScreenPosition();\n            Vertex common = new Vertex(point1, tp1, outside.get(0).getNormal(), sp1);\n            triangles.add(new Triangle(inside.get(0), inside.get(1), common));\n            triangles.add(new Triangle(inside.get(1), common.copy(), new Vertex(point2, tp2,\n                    outside.get(0).getNormal().copy(), sp2)));\n        }\n\n        return triangles;\n    }\n\n    private double planeLineIntersection(Plane plane, Vector3D a, Vector3D b) {\n        double pd = plane.pos().dot(plane.normal());\n        double ad = a.dot(plane.normal());\n        double bd = b.dot(plane.normal());\n        return (pd-ad)/(bd-ad);\n    }\n\n    public boolean isVisible() {\n        for (Vertex v : vertices)\n            if (v.getPosition().dot(v.getNormal()) < 0)\n                return true;\n        return false;\n    }\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/com/mcoder/jge/g3d/geom/Triangle.java b/src/com/mcoder/jge/g3d/geom/Triangle.java
+--- a/src/com/mcoder/jge/g3d/geom/Triangle.java	
++++ b/src/com/mcoder/jge/g3d/geom/Triangle.java	
+@@ -1,7 +1,6 @@
+ package com.mcoder.jge.g3d.geom;
+ 
+ import com.mcoder.jge.g3d.core.Vertex;
+-import com.mcoder.jge.g3d.scene.Camera;
+ import com.mcoder.jge.math.Vector2D;
+ import com.mcoder.jge.math.Vector3D;
+ 
+@@ -28,42 +27,41 @@
+         if (inside.size() == 3)
+             triangles.add(this);
+         else if (inside.size() == 1 && outside.size() == 2) {
+-            double t1 = planeLineIntersection(plane, inside.get(0).getPosition(), outside.get(0).getPosition());
+-            Vector3D point1 = Vector3D.lerp(inside.get(0).getPosition(), outside.get(0).getPosition(), t1);
+-            Vector2D tp1 = Vector2D.lerp(inside.get(0).getTexCoords(), outside.get(0).getTexCoords(), t1);
++            double t1 = planeLineIntersection(plane, inside.getFirst().getPosition(), outside.get(0).getPosition());
++            Vector3D point1 = Vector3D.lerp(inside.getFirst().getPosition(), outside.get(0).getPosition(), t1);
++            Vector2D tp1 = Vector2D.lerp(inside.getFirst().getTexCoords(), outside.get(0).getTexCoords(), t1);
+ 
+-            double t2 = planeLineIntersection(plane, inside.get(0).getPosition(), outside.get(1).getPosition());
+-            Vector3D point2 = Vector3D.lerp(inside.get(0).getPosition(), outside.get(1).getPosition(), t2);
+-            Vector2D tp2 = Vector2D.lerp(inside.get(0).getTexCoords(), outside.get(1).getTexCoords(), t2);
++            double t2 = planeLineIntersection(plane, inside.getFirst().getPosition(), outside.get(1).getPosition());
++            Vector3D point2 = Vector3D.lerp(inside.getFirst().getPosition(), outside.get(1).getPosition(), t2);
++            Vector2D tp2 = Vector2D.lerp(inside.getFirst().getTexCoords(), outside.get(1).getTexCoords(), t2);
+ 
+             Vector2D sp1 = null, sp2 = null;
+             if (clipScreenPos) {
+-                sp1 = Vector2D.lerp(inside.get(0).getScreenPosition(), outside.get(0).getScreenPosition(), t1);
+-                sp2 = Vector2D.lerp(inside.get(0).getScreenPosition(), outside.get(1).getScreenPosition(), t2);
++                sp1 = Vector2D.lerp(inside.getFirst().getScreenPosition(), outside.get(0).getScreenPosition(), t1);
++                sp2 = Vector2D.lerp(inside.getFirst().getScreenPosition(), outside.get(1).getScreenPosition(), t2);
+             }
+ 
+-            triangles.add(new Triangle(inside.get(0), new Vertex(point1, tp1, outside.get(0).getNormal(), sp1),
++            triangles.add(new Triangle(inside.getFirst(), new Vertex(point1, tp1, outside.get(0).getNormal(), sp1),
+                     new Vertex(point2, tp2, outside.get(1).getNormal(), sp2)));
+         } else if (inside.size() == 2 && outside.size() == 1) {
+-            double t1 = planeLineIntersection(plane, inside.get(0).getPosition(), outside.get(0).getPosition());
+-            Vector3D point1 = Vector3D.lerp(inside.get(0).getPosition(), outside.get(0).getPosition(), t1);
+-            Vector2D tp1 = Vector2D.lerp(inside.get(0).getTexCoords(), outside.get(0).getTexCoords(), t1);
++            double t1 = planeLineIntersection(plane, inside.getFirst().getPosition(), outside.getFirst().getPosition());
++            Vector3D point1 = Vector3D.lerp(inside.get(0).getPosition(), outside.getFirst().getPosition(), t1);
++            Vector2D tp1 = Vector2D.lerp(inside.get(0).getTexCoords(), outside.getFirst().getTexCoords(), t1);
+ 
+-            double t2 = planeLineIntersection(plane, inside.get(1).getPosition(), outside.get(0).getPosition());
+-            Vector3D point2 = Vector3D.lerp(inside.get(1).getPosition(), outside.get(0).getPosition(), t2);
+-            Vector2D tp2 = Vector2D.lerp(inside.get(1).getTexCoords(), outside.get(0).getTexCoords(), t2);
++            double t2 = planeLineIntersection(plane, inside.get(1).getPosition(), outside.getFirst().getPosition());
++            Vector3D point2 = Vector3D.lerp(inside.get(1).getPosition(), outside.getFirst().getPosition(), t2);
++            Vector2D tp2 = Vector2D.lerp(inside.get(1).getTexCoords(), outside.getFirst().getTexCoords(), t2);
+ 
+             Vector2D sp1 = null, sp2 = null;
+             if (clipScreenPos) {
+-                sp1 = Vector2D.lerp(inside.get(0).getScreenPosition(), outside.get(0).getScreenPosition(), t1);
+-                sp2 = Vector2D.lerp(inside.get(1).getScreenPosition(), outside.get(0).getScreenPosition(), t2);
++                sp1 = Vector2D.lerp(inside.get(0).getScreenPosition(), outside.getFirst().getScreenPosition(), t1);
++                sp2 = Vector2D.lerp(inside.get(1).getScreenPosition(), outside.getFirst().getScreenPosition(), t2);
+             }
+ 
+-            Vector2D sp = outside.get(0).getScreenPosition();
+-            Vertex common = new Vertex(point1, tp1, outside.get(0).getNormal(), sp1);
++            Vertex common = new Vertex(point1, tp1, outside.getFirst().getNormal(), sp1);
+             triangles.add(new Triangle(inside.get(0), inside.get(1), common));
+             triangles.add(new Triangle(inside.get(1), common.copy(), new Vertex(point2, tp2,
+-                    outside.get(0).getNormal().copy(), sp2)));
++                    outside.getFirst().getNormal().copy(), sp2)));
+         }
+ 
+         return triangles;

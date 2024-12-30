@@ -1,0 +1,35 @@
+Index: src/com/mcoder/jgel/g3d/scene/World.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.mcoder.jgel.g3d.scene;\n\nimport com.mcoder.jgel.g3d.render.Model;\nimport com.mcoder.jgel.g3d.render.Solid;\nimport com.mcoder.jgel.scene.Display;\nimport com.mcoder.jgel.math.Vector;\nimport com.mcoder.jgel.scene.Screen;\nimport com.mcoder.jgel.util.Texture;\n\nimport java.awt.*;\nimport java.util.LinkedList;\n\npublic class World extends Display {\n    private static World instance;\n\n    private final Camera camera;\n    private final Vector light;\n    private final LinkedList<Solid> stuffs;\n\n    private World() {\n        super();\n        light = new Vector(0, 0, 1);\n        camera = new Camera(0, 0, -4);\n        addListener(camera);\n        stuffs = new LinkedList<>();\n\n        // Testing\n        /*Model cubeModel = Model.loadFromFile(\"res/model/cube.obj\");\n        Texture texture = new Texture(\"cobblestone.png\");\n        for (int i = -1; i <= 1; i++)\n            for (int j = -1; j <= 1; j++)\n                for (int k = -1; k <= 1; k++) {\n                    Solid cube = new Solid(cubeModel, i, 0, k);\n                    cube.setTexture(texture);\n                    stuffs.add(cube);\n                }\n\n        Solid cube = new Solid(cubeModel, 0, 0, 0);\n        cube.setTexture(texture);\n        stuffs.add(cube);*/\n\n        Model mountainsModel = Model.loadFromFile(\"res/model/mountains.obj\");\n        stuffs.add(new Solid(mountainsModel, 0, 0, 0));\n\n        /*Model shipModel = Model.loadFromFile(\"res/model/ship.obj\");\n        stuffs.add(new Solid(shipModel, 0, 0, 0));*/\n    }\n\n    @Override\n    public void update() {\n        camera.update();\n        for (Solid stuff : stuffs)\n            stuff.update();\n    }\n\n    @Override\n    public void show(Graphics2D g2d) {\n        for (Solid stuff : stuffs)\n            stuff.show(g2d);\n    }\n\n    public Camera getCamera() {\n        return camera;\n    }\n\n    public Vector getLight() {\n        return light;\n    }\n\n    public static World getInstance() {\n        if (instance == null)\n            instance = new World();\n        return instance;\n    }\n}\n
+===================================================================
+diff --git a/src/com/mcoder/jgel/g3d/scene/World.java b/src/com/mcoder/jgel/g3d/scene/World.java
+--- a/src/com/mcoder/jgel/g3d/scene/World.java	
++++ b/src/com/mcoder/jgel/g3d/scene/World.java	
+@@ -25,7 +25,7 @@
+         stuffs = new LinkedList<>();
+ 
+         // Testing
+-        /*Model cubeModel = Model.loadFromFile("res/model/cube.obj");
++        Model cubeModel = Model.loadFromFile("res/model/cube.obj");
+         Texture texture = new Texture("cobblestone.png");
+         for (int i = -1; i <= 1; i++)
+             for (int j = -1; j <= 1; j++)
+@@ -35,14 +35,14 @@
+                     stuffs.add(cube);
+                 }
+ 
+-        Solid cube = new Solid(cubeModel, 0, 0, 0);
++        /*Solid cube = new Solid(cubeModel, 0, 0, 0);
+         cube.setTexture(texture);
+-        stuffs.add(cube);*/
++        stuffs.add(cube);
+ 
+         Model mountainsModel = Model.loadFromFile("res/model/mountains.obj");
+         stuffs.add(new Solid(mountainsModel, 0, 0, 0));
+ 
+-        /*Model shipModel = Model.loadFromFile("res/model/ship.obj");
++        Model shipModel = Model.loadFromFile("res/model/ship.obj");
+         stuffs.add(new Solid(shipModel, 0, 0, 0));*/
+     }
+ 
